@@ -1,6 +1,7 @@
 services:
   wordpress:
-    image: ghcr.io/wzul/wordpress-dokploy:latest
+    build: .
+#    image: ghcr.io/wzul/wordpress-dokploy:latest
     volumes:
       - wp_app:/var/www/html
     init: true
