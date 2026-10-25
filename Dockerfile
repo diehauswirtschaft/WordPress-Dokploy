@@ -1,7 +1,9 @@
 FROM litespeedtech/openlitespeed:1.8.5-lsphp84
 
 # Install dependencies and msmtp
+# Upgrade lsphp84 to pick up security fixes (CVE-2026-109618/109619, fixed in 8.4.27)
 RUN apt-get update && \
+    apt-get install -y --only-upgrade 'lsphp84*' && \
     apt-get install -y msmtp msmtp-mta curl unzip wget less inotify-tools && \
     rm -rf /var/lib/apt/lists/*
 
