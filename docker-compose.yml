@@ -6,6 +6,11 @@ services:
       - wp_app:/var/www/html
     init: true
     env_file: ".env"
+    # Reach the site's own domain via the Docker host (Traefik), as the
+    # public IP is not reachable from inside (no hairpin NAT). Needed for
+    # WordPress loopback requests, LiteSpeed purges and Matomo archiving.
+    extra_hosts:
+      - "${SERVER_HOSTNAME:?SERVER_HOSTNAME must be set}:host-gateway"
     restart: unless-stopped
 
   mail-relay:
