@@ -9,12 +9,14 @@ services:
     restart: unless-stopped
 
   mail-relay:
-    image: ghcr.io/wzul/wordpress-dokploy-mail-relay:latest
+    build: ./mail-relay
+#    image: ghcr.io/wzul/wordpress-dokploy-mail-relay:latest
     env_file: ".env"
     restart: unless-stopped
 
   mariadb:
-    image: ghcr.io/wzul/wordpress-dokploy-mariadb:latest
+    build: ./mariadb
+#    image: ghcr.io/wzul/wordpress-dokploy-mariadb:latest
     env_file: ".env"
     volumes:
       - db_data:/var/lib/mysql
