@@ -47,6 +47,8 @@ echo "==> [3/6] Replacing target database"
   echo "UPDATE wp_usermeta SET meta_key = CONCAT('wp_', SUBSTRING(meta_key, 6)) WHERE meta_key LIKE 'wp\\_6\\_%';"
   echo "UPDATE wp_options SET option_name = 'wp_user_roles' WHERE option_name = 'wp_6_user_roles';"
 } | dst_sql
+# Drop object cache entries of the old database, or wp-cli reads stale options
+ssh_dst "docker exec \$(docker ps -qf name=${APP}-valkey) valkey-cli FLUSHALL"
 
 echo "==> [4/6] Copying uploads"
 ssh_dst "rm -rf ${DST_UPLOADS:?}/* && mkdir -p $DST_UPLOADS"
@@ -69,6 +71,11 @@ dst_wp core update-db
 dst_wp theme activate twentytwentytwo
 dst_wp plugin activate newsletter matomo twentig svg-support iframe wonderm00ns-simple-facebook-open-graph-tags duplicate-page capability-manager-enhanced updraftplus
 dst_wp option update WPLANG de_DE
+# Matomo keeps its site mapping and global settings as network options
+ssh_src "mysql -N wordpress -e \"select meta_value from wp_sitemeta where meta_key='matomo-global-option'\"" \
+  | ssh_dst "docker exec -i -u nobody \$(docker ps -qf name=${APP}-wordpress) sh -c 'cat > /tmp/matomo-global-option.txt'"
+# Bumping last_tracking_settings_update regenerates the cached tracking code
+dst_wp eval "'\$v = unserialize(trim(file_get_contents(\"/tmp/matomo-global-option.txt\"))); \$v[\"last_tracking_settings_update\"] = \$v[\"last_settings_update\"] = time(); update_option(\"matomo-global-option\", \$v); update_option(\"matomo-site-id-1\", 1);'"
 dst_wp rewrite structure "'/%postname%/'"
 ssh_dst "docker exec -i -u nobody \$(docker ps -qf name=${APP}-wordpress) sh -c 'cat > /tmp/htaccess-rules.php'" < "$(dirname "$(readlink -f "$0")")/htaccess-rules.php"
 dst_wp eval-file /tmp/htaccess-rules.php
